@@ -1,0 +1,9 @@
+{
+    "Plugins": [
+      {
+        "Name": "Sample Plugin",
+        "URL" : "",
+        "Version": "0.0"
+      }
+    ]
+  }
