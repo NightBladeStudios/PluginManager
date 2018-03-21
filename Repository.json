@@ -2,8 +2,13 @@
     "Plugins": [
       {
         "Name": "Sample Plugin",
-        "URL" : "https://github.com/NightBladeStudios/PluginManager/releases/download/v0.1-pre-alpha/SamplePlugin.unitypackage",
+        "URL" : "https://github.com/NightBladeStudios/PluginManager/releases/download/v0.1.1-pre-alpha/SamplePlugin.unitypackage",
         "Version": "0.1"
+      },
+      {
+        "Name": "Version Manager",
+        "URL" : "https://github.com/NightBladeStudios/PluginManager/releases/download/v0.1.1-pre-alpha/VersionManager.unitypackage",
+        "Version": "1.0"
       }
     ]
   }
