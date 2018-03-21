@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace NightBladeStudios.PluginManager.Editor
@@ -9,15 +10,18 @@ namespace NightBladeStudios.PluginManager.Editor
 
         public static T GetData<T>() where T : PluginData
         {
-            var data = (T) EditorGUIUtility.Load(typeof(T).Name + ".asset");
+            var data = (T)EditorGUIUtility.Load(typeof(T).Name + ".asset");
             if (data == null) data = Create<T>();
             return data;
         }
 
         public static T Create<T>() where T : PluginData
         {
-            var data = (T) ScriptableObject.CreateInstance(typeof(T));
-            AssetDatabase.CreateAsset(data, string.Format("Assets/Editor Default Resources/{0}.asset", typeof(T).Name));
+            var directoryPath = Application.dataPath+ "/Editor Default Resources";
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+            var data = (T)ScriptableObject.CreateInstance(typeof(T));
+            AssetDatabase.CreateAsset(data, string.Format("Assets/Editor Default Resources/{0}.asset",  typeof(T).Name));
             AssetDatabase.SaveAssets();
             return data;
         }
