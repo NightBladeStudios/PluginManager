@@ -9,127 +9,157 @@ using UnityEngine.Networking;
 
 public class PluginManagerWindow : Editor
 {
-    private const string RepoURL = "file://C:/Source/PluginManager/PluginManager/Assets/PluginRepo.json";
-    private static PluginRepository Repo;
-    
+    private const string RepoURL =
+        "https://raw.githubusercontent.com/NightBladeStudios/PluginManager/master/Repository.json?token=ABwhJlcBl4dfyHPtqpQ-H036Z7v4gCd_ks5au8FbwA%3D%3D";
+
+    private static PluginRepository repo;
+
     #region Reflection
+
     public static void LoadPlugins()
     {
-        _plugins = new List<IPlugin>();
-        foreach (Type mytype in System.Reflection.Assembly.GetExecutingAssembly().GetTypes()
-            .Where(mytype => mytype.GetInterfaces().Contains(typeof(IPlugin))))
+        plugins = new List<IPlugin>();
+        foreach (Type mytype in System.Reflection.Assembly.GetExecutingAssembly().GetTypes())
         {
-            _plugins.Add((IPlugin)Activator.CreateInstance(mytype));
+            if (mytype.GetInterfaces().Contains(typeof(IPlugin)))
+            {
+                plugins.Add((IPlugin)Activator.CreateInstance(mytype));
+            }
         }
-        _foldouts = Enumerable.Repeat(false, _plugins.Count).ToList();
+
+        foldouts = Enumerable.Repeat(false, plugins.Count).ToList();
     }
 
 
     #endregion
 
     #region Window
+
     private const string WindowTitle = "Plugin Manager";
-    
-    private static List<IPlugin> _plugins;
-    private static List<bool> _foldouts;
-    
+
+    private static List<IPlugin> plugins;
+    private static List<bool> foldouts;
+
 
     [PreferenceItem(WindowTitle)]
 
     public static void GUI()
     {
-       
-        if (_plugins == null)
+
+        if (plugins == null)
         {
             LoadPlugins();
         }
 
-        if (Repo == null)
+        if (repo == null)
         {
             LoadPluginRepo();
         }
-        
+
         if (GUILayout.Button("Update"))
         {
             LoadPluginRepo();
 
         }
 
-        if (Repo != null)
-            if (Repo.Plugins != null)
-                for (int index = 0; index < Repo.Plugins.Count; index++)
+        if (repo != null)
+        {
+            DrawOfficialPlugins();
+            DrawLocalPlugins();
+        }
+        else
+        {
+            GUILayout.Label("Loading Repository...");
+
+        }
+    }
+
+    private static void DrawLocalPlugins()
+    {
+        for (int index = 0; index < plugins.Count; index++)
+        {
+            if (!CheckIfOfficial(plugins[index].GetPluginTitle()))
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                DrawPlugin(index);
+
+                EditorGUILayout.EndVertical();
+            }
+
+        }
+    }
+
+    private static void DrawOfficialPlugins()
+    {
+        if (repo.Plugins != null)
+            for (int index = 0; index < repo.Plugins.Count; index++)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                if (CheckIfDownloaded(index))
                 {
-                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-                    if (_plugins.Exists(plugin => plugin.GetPluginTitle() == Repo.Plugins[index].Name))
-                    {
-                        _foldouts[index] = EditorGUILayout.Foldout(_foldouts[index],
-                            _plugins[index].GetPluginTitle());
+                    DrawPlugin(GetPluginIndex(repo.Plugins[index].Name));
 
-                        if (_foldouts[index])
-                        {
-                            _plugins[index].GUI();
-                        }
-                    }
-                    else
-                    {
-                        if (EditorGUILayout.ToggleLeft(Repo.Plugins[index].Name, false))
-                        {
-                            DownloadAsset(Repo.Plugins[index].URL);
+                }
+                else
+                {
 
-                        }
-                    }
-
-                    EditorGUILayout.EndVertical();
+                    DrawAvailableOfficialPlugin(index);
 
                 }
 
-        //        for (var index = 0; index < window._plugins.Count; index++)
-        //        {
-        //            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-        //
-        //            EditorGUILayout.EndVertical();
-        //        }
+                EditorGUILayout.EndVertical();
+            }
+    }
 
-        //        {
-        //                ADBPath = EditorPrefs.GetString("AndroidADBPath", "");
-        //                BuildLocation = EditorPrefs.GetString("AndroidBuildLocation", "");
-        //                ReleaseVersion = EditorPrefs.GetString("AndroidBuildReleaseVersion", "Alpha");
-        //                LogcatFilters =
-        //                    JsonUtility.FromJson<LogcatFilterWrapper>(EditorPrefs.GetString("LogcatFilters",
-        //                        JsonUtility.ToJson(new LogcatFilterWrapper())));
-        //
-        //                prefsLoaded = true;
-        //        }
+    private static bool CheckIfOfficial(string name)
+    {
+        return repo != null && (repo.Plugins != null && repo.Plugins.Exists(plugin => plugin.Name == name));
+    }
 
-        //        if (GUILayout.Button("Add Filter"))
-        //        {
-        //                LogcatFilters.Filters.Add(new LogcatFilter {Color = Color.black, Contains = "Unity"});
-        //                GUI.changed = true;
-        //                Debug.Log(JsonUtility.ToJson(LogcatFilters));
-        //        }
+    private static bool CheckIfDownloaded(int index)
+    {
+        return plugins.Exists(plugin => plugin.GetPluginTitle() == repo.Plugins[index].Name);
+    }
 
+    private static void DrawAvailableOfficialPlugin(int index)
+    {
+        if (EditorGUILayout.ToggleLeft(repo.Plugins[index].Name, false))
+        {
+            DownloadAsset(repo.Plugins[index].URL);
 
-        //            if (!GUI.changed) return;
-        //
-        //            EditorPrefs.SetString("AndroidADBPath", ADBPath);
-        //            EditorPrefs.SetString("AndroidBuildLocation", BuildLocation);
-        //            EditorPrefs.SetString("AndroidBuildReleaseVersion", ReleaseVersion);
-        //            EditorPrefs.SetBool("AndroidConfigured", ADBPath != "" && BuildLocation != "" && ReleaseVersion != "");
-        //            EditorPrefs.SetString("LogcatFilters", JsonUtility.ToJson(LogcatFilters));
+        }
+    }
+
+    private static int GetPluginIndex(string name)
+    {
+        return plugins.FindIndex(plugin => plugin.GetPluginTitle() == name);
+    }
+
+    private static void DrawPlugin(int index)
+    {
+        foldouts[index] = EditorGUILayout.Foldout(foldouts[index],
+            plugins[index].GetPluginTitle());
+
+        if (foldouts[index])
+        {
+            plugins[index].GUI();
+        }
     }
     #endregion
 
     #region Download Methods
 
-    
+
     public static void LoadPluginRepo()
     {
         UnityWebRequest uwr = UnityWebRequest.Get(RepoURL);
         EditorWWWHelper.Download(uwr, () =>
         {
             var json = uwr.downloadHandler.text;
-            Repo = JsonUtility.FromJson<PluginRepository>(json);
+            repo = JsonUtility.FromJson<PluginRepository>(json);
             uwr.Dispose();
         });
     }
